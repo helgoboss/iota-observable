@@ -24,7 +24,6 @@ define (require) ->
   
     # Sets one or several properties of this object and informs observers.
     # Can take a single map parameter or two parameters: key, value.
-    # TODO allow nested dot notation.
     set: (args...) ->
       if args.length == 1
         # A map containing new key-value pairs has been given
@@ -36,9 +35,13 @@ define (require) ->
         @_setOne(args[0], args[1])
         
         
-    # Returns the property with the given key. TODO allow nested dot notation.
-    get: (key) -> 
-      @[key]
+    # Returns the property with the given key.
+    get: (key) ->
+      result = @_processKeypath(key)
+      if result.resolvedParent?
+        result.resolvedParent[result.lastSegment]
+      else
+        undefined
     
     # Manually informs the observers about a change in the property with the given key.
     invalidate: (key) ->
@@ -64,6 +67,29 @@ define (require) ->
       @_observersByKey = {}
      
     _setOne: (key, value) ->
-      @[key] = value
-      @invalidate(key)
-    
+      result = @_processKeypath(key)
+      if result.resolvedParent?
+        result.resolvedParent[result.lastSegment] = value
+        @invalidate(key)
+      
+    _processKeypath: (keypath) ->
+      # Split keypath into segments
+      segments = keypath.split(".")
+      
+      # Process segments
+      @_processKeypathSegments(@, segments)
+      
+    _processKeypathSegments: (parent, segments) ->
+      if segments.length == 1
+        # Everything resolved
+        resolvedParent: parent
+        lastSegment: segments[0]
+      else
+        # Still some segments left. Remove first one.
+        firstSegment = segments.shift()
+        
+        # Lookup object
+        resolvedObject = parent[firstSegment]
+        
+        # Go on processing remaining segments by doing recursion
+        @_processKeypathSegments(resolvedObject, segments)

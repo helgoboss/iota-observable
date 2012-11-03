@@ -44,7 +44,13 @@ define(function(require) {
     };
 
     Observable.prototype.get = function(key) {
-      return this[key];
+      var result;
+      result = this._processKeypath(key);
+      if (result.resolvedParent != null) {
+        return result.resolvedParent[result.lastSegment];
+      } else {
+        return void 0;
+      }
     };
 
     Observable.prototype.invalidate = function(key) {
@@ -84,8 +90,32 @@ define(function(require) {
     };
 
     Observable.prototype._setOne = function(key, value) {
-      this[key] = value;
-      return this.invalidate(key);
+      var result;
+      result = this._processKeypath(key);
+      if (result.resolvedParent != null) {
+        result.resolvedParent[result.lastSegment] = value;
+        return this.invalidate(key);
+      }
+    };
+
+    Observable.prototype._processKeypath = function(keypath) {
+      var segments;
+      segments = keypath.split(".");
+      return this._processKeypathSegments(this, segments);
+    };
+
+    Observable.prototype._processKeypathSegments = function(parent, segments) {
+      var firstSegment, resolvedObject;
+      if (segments.length === 1) {
+        return {
+          resolvedParent: parent,
+          lastSegment: segments[0]
+        };
+      } else {
+        firstSegment = segments.shift();
+        resolvedObject = parent[firstSegment];
+        return this._processKeypathSegments(resolvedObject, segments);
+      }
     };
 
     return Observable;

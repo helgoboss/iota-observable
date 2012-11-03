@@ -10,6 +10,7 @@ chai.use(sinonChai)
 # - add nested property support
 # - add computed properties
 # - add dependency watching
+# - add observer parameters (old/new)
 
 ## Reused stuff
 
@@ -82,6 +83,22 @@ createTests = (description, createObservable) ->
       o.set("nested.baz", 3)
 
       callback.should.have.been.called
+      
+    it "should also call registered observers of nested observable when setting a nested property value via set", ->
+      nestedObservable = new Observable
+        observedProp: 2
+      o.nested.observableObj = nestedObservable
+        
+      nestedCallback = sinon.spy()
+      callback = sinon.spy()
+        
+      nestedObservable.on "observedProp", nestedCallback
+      o.on "nested.observableObj.observedProp", callback
+      
+      o.set("nested.observableObj.observedProp", 3)
+
+      callback.should.have.been.called
+      nestedCallback.should.have.been.called
       
     it "should not call unregistered observers when setting a property value via set", ->
       callback = sinon.spy()

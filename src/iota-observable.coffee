@@ -1,8 +1,27 @@
-if typeof define isnt "function"
-  define = require("amdefine")(module)
+# See "amdefine" on github
+`if (typeof define !== 'function') { var define = require('amdefine')(module) }`
 
 define (require) ->
-  Observable =
+  class Observable
+    # Static method used to mixin the Observable methods to the given object and initialize it.
+    @makeObservable: (obj) ->
+      # Copy Observable's prototype properties to the object
+      for key, value of @::
+        obj[key] = value
+        
+      # Initialize object
+      obj._init()
+        
+    # Initializes the Observable. If an object is given, all its properties are copied into the Observable.
+    constructor: (obj) ->
+      # Initialize
+      @_init()
+      
+      # Copy properties of obj
+      if obj?
+        for key, value of obj
+          @[key] = value
+  
     # Sets one or several properties of this object and informs observers.
     # Can take a single map parameter or two parameters: key, value.
     # TODO allow nested dot notation.
@@ -23,27 +42,28 @@ define (require) ->
     
     # Manually informs the observers about a change in the property with the given key.
     invalidate: (key) ->
-      observers = @_getObserversByKey()[key]
+      observers = @_observersByKey[key]
       if observers?
         for observer in observers 
           observer()
     
     # Registers the given observer for the given object property key.
     on: (key, observer) ->
-      @_getObserversByKey()[key] ?= []
-      @_getObserversByKey()[key].push(observer)
+      @_observersByKey[key] ?= []
+      @_observersByKey[key].push(observer)
     
     # Unregisters the given observer for the given object property key.
     off: (key, observer) ->
-      os = @_getObserversByKey()[key] 
+      os = @_observersByKey[key] 
       if os?
         i = os.indexOf(observer)
         if i != -1
           os[i..i] = []
+          
+    _init: ->
+      @_observersByKey = {}
      
     _setOne: (key, value) ->
       @[key] = value
       @invalidate(key)
-      
-    _getObserversByKey: ->
-      @_observersByKey ?= {}
+    

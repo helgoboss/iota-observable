@@ -2,6 +2,9 @@ module.exports = function(grunt) {
   grunt.initConfig({
     coffee: {
       compile: {
+        options: {
+          bare: true // because of "amdefine"
+        },
         files: {
           "*.js": "src/*.coffee"
         }

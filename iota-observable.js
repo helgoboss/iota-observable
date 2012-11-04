@@ -159,7 +159,7 @@ define(function(require) {
 
     Observable.prototype._invokeIfNecessary = function(obj) {
       if (typeof obj === "function") {
-        return obj();
+        return obj.apply(this);
       } else {
         return obj;
       }

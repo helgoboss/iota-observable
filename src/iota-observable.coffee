@@ -147,7 +147,7 @@ define (require) ->
     
     _invokeIfNecessary: (obj) ->
       if typeof obj == "function"
-        obj()
+        obj.apply(@)
       else
         obj
     

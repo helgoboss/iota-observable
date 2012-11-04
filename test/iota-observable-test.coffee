@@ -8,7 +8,6 @@ chai.use(sinonChai)
 
 # TODO
 # - add dependency watching
-# - add observer parameters (old/new), return old
 
 ## Reused stuff
 
@@ -25,6 +24,9 @@ createTests = (description, createObservable) ->
       
     it "should return computed property values using get", ->  
       o.get("computed").should.equal 77
+      
+    it "should return dependent computed property values using get", ->  
+      o.get("dependentComputed").should.equal 72
       
     it "should return nested property values using get", ->  
       o.get("nested.bum").should.equal 3
@@ -160,6 +162,7 @@ createData = ->
   foo: 1
   bar: 2
   computed: -> 77
+  dependentComputed: -> @bar + 70
   computedNested: ->
     computed2: -> 22
   nested:
@@ -196,3 +199,4 @@ describe "Observable", ->
     
 
 createTests "An Observable instance", instantiateObservable
+createTests "An Observable instance", makeObservable

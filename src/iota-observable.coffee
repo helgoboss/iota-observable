@@ -72,7 +72,7 @@ define (require) ->
       # Call observers of keypath
       observers = @_observersByKeypath[keypath]
       if observers?
-        for id, observer of observers
+        for observer in observers
           observer(oldValue, newValue)
           
       # Call observers of computed properties which depend on this keypath
@@ -82,19 +82,18 @@ define (require) ->
           @invalidate(dependentKeypath, null, null)
     
     # Registers the given observer for the given object property keypath.
-    # If the observer was already registered before for this keypath, this method has no effect.
     on: (keypath, observer) ->
-      @_observersByKeypath[keypath] ?= {}
-      # We want set behavior here (one observer must only occur one time), so we use an object instead of an array.
-      # Maybe use a more efficient set implementation here in future.
-      @_observersByKeypath[keypath][observer] = observer
+      @_observersByKeypath[keypath] ?= []
+      @_observersByKeypath[keypath].push observer
     
     # Unregisters the given observer for the given object property keypath.
     # If the observer was not registered before, this method has no effect.
     off: (keypath, observer) ->
       observers = @_observersByKeypath[keypath] 
       if observers?
-        delete observers[observer]
+        i = observers.indexOf observer
+        if i != -1
+          observers[i..i] = []
           
     _init: ->
       @_observersByKeypath = {}

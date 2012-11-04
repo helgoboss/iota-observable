@@ -71,11 +71,11 @@ define(function(require) {
     };
 
     Observable.prototype.invalidate = function(keypath, oldValue, newValue) {
-      var dependentKeypath, dependentKeypaths, id, observer, observers, _results;
+      var dependentKeypath, dependentKeypaths, observer, observers, _i, _len, _results;
       observers = this._observersByKeypath[keypath];
       if (observers != null) {
-        for (id in observers) {
-          observer = observers[id];
+        for (_i = 0, _len = observers.length; _i < _len; _i++) {
+          observer = observers[_i];
           observer(oldValue, newValue);
         }
       }
@@ -92,16 +92,19 @@ define(function(require) {
     Observable.prototype.on = function(keypath, observer) {
       var _base, _ref;
       if ((_ref = (_base = this._observersByKeypath)[keypath]) == null) {
-        _base[keypath] = {};
+        _base[keypath] = [];
       }
-      return this._observersByKeypath[keypath][observer] = observer;
+      return this._observersByKeypath[keypath].push(observer);
     };
 
     Observable.prototype.off = function(keypath, observer) {
-      var observers;
+      var i, observers, _ref;
       observers = this._observersByKeypath[keypath];
       if (observers != null) {
-        return delete observers[observer];
+        i = observers.indexOf(observer);
+        if (i !== -1) {
+          return ([].splice.apply(observers, [i, i - i + 1].concat(_ref = [])), _ref);
+        }
       }
     };
 

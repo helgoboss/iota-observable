@@ -7,7 +7,6 @@ should = chai.should()
 chai.use(sinonChai)
 
 # TODO
-# - Make sure that several dependency observers for one keypath are not fused together by the set mechanism (because the function is the same, i think)
 # - Implement transactions (delayed observer invocations) - also use them in set() with map!
 # - Prevent multiple invocation of observers in one set
 # - Implement throotled observer invocations

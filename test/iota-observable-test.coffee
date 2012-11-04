@@ -3,7 +3,7 @@ sinon = require "sinon"
 sinonChai = require "sinon-chai"
 Observable = require "../iota-observable"
 
-chai.should()
+should = chai.should()
 chai.use(sinonChai)
 
 # TODO
@@ -28,6 +28,13 @@ createTests = (description, createObservable) ->
     it "should return nested property values using get", ->  
       o.get("nested.bum").should.equal 3
       
+    it "should return nested observable property values using get", ->  
+      o.get("nested.observableObj.observedProp").should.equal 7
+      
+    it "should return undefined when it meets a dead end or incompatible property using get", ->  
+      result = o.get("nested.bum.olli")
+      should.equal(result, undefined)
+      
     it "should return property values using dot operator", ->  
       o.foo.should.equal 1
       
@@ -43,18 +50,33 @@ createTests = (description, createObservable) ->
       o.get("nested.baz").should.equal 7
 
     it "should set property values using set", ->
-      o.set("bar", 3)
+      o.set("bar", 3).should.equal true
       o.get("bar").should.equal 3
       
     it "should set nested property values using set", ->
-      o.set("nested.baz", 7)
+      o.set("nested.baz", 7).should.equal true
       o.get("nested.baz").should.equal 7
       
+    it "should set nested observable property values using set", ->
+      o.set("nested.observableObj.observedProp", 8).should.equal true
+      o.get("nested.observableObj.observedProp").should.equal 8
+      
+    it "should pave the way when it meets a dead end using set", ->
+      o.set("nested.hui.super", 7).should.equal true
+      o.get("nested.hui.super").should.equal 7
+      
+    it "shouldn't pave the way when it meets an incompatible property using set", ->
+      o.set("nested.bum.super", 7).should.equal false
+      result = o.get("nested.bum.super")
+      should.equal(result, undefined)
+      
     it "should set property values using set with a map", ->
-      o.set
+      [fooSuccessful, barSuccessful] = o.set
         foo: 3
         bar: 4
         
+      fooSuccessful.should.equal true
+      barSuccessful.should.equal true
       o.get("foo").should.equal 3
       o.get("bar").should.equal 4
           
@@ -84,18 +106,26 @@ createTests = (description, createObservable) ->
 
       callback.should.have.been.called
       
-    it "should also call registered observers of nested observable when setting a nested property value via set", ->
-      nestedObservable = new Observable
-        observedProp: 2
-      o.nested.observableObj = nestedObservable
-        
+    it "should also call registered observers of last nested observable when setting a nested property value via set", ->
       nestedCallback = sinon.spy()
       callback = sinon.spy()
         
-      nestedObservable.on "observedProp", nestedCallback
+      o.nested.observableObj.on "observedProp", nestedCallback
       o.on "nested.observableObj.observedProp", callback
       
       o.set("nested.observableObj.observedProp", 3)
+
+      callback.should.have.been.called
+      nestedCallback.should.have.been.called
+      
+    it "should also call registered observers of middle nested observable when setting a nested property value via set", ->
+      nestedCallback = sinon.spy()
+      callback = sinon.spy()
+        
+      o.nested.observableObj.on "observedObj2.observableProp2", nestedCallback
+      o.on "nested.observableObj.observedObj2.observableProp2", callback
+      
+      o.set("nested.observableObj.observedObj2.observableProp2", 3)
 
       callback.should.have.been.called
       nestedCallback.should.have.been.called
@@ -126,6 +156,10 @@ createData = ->
   bar: 2
   nested:
     bum: 3
+    observableObj: new Observable
+      observedProp: 7
+      observableObj2: new Observable
+        observedProp2: 8 
     nested2:
       baw: 4
   
@@ -154,7 +188,7 @@ describe "Observable", ->
     
 
 createTests "An Observable instance", instantiateObservable
-createTests "An object which has been made observable", makeObservable
+# createTests "An object which has been made observable", makeObservable
     
 
   

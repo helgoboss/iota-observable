@@ -28,14 +28,14 @@ define(function(require) {
     }
 
     Observable.prototype.set = function() {
-      var args, key, properties, value, _results;
+      var args, keypath, properties, value, _results;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       if (args.length === 1) {
         properties = args[0];
         _results = [];
-        for (key in properties) {
-          value = properties[key];
-          _results.push(this._setOne(key, value));
+        for (keypath in properties) {
+          value = properties[keypath];
+          _results.push(this._setOne(keypath, value));
         }
         return _results;
       } else {
@@ -43,19 +43,15 @@ define(function(require) {
       }
     };
 
-    Observable.prototype.get = function(key) {
-      var result;
-      result = this._processKeypath(key);
-      if (result.resolvedParent != null) {
-        return result.resolvedParent[result.lastSegment];
-      } else {
-        return void 0;
-      }
+    Observable.prototype.get = function(keypath) {
+      var segments;
+      segments = keypath.split(".");
+      return this._followAndGetKeypathSegments(this, segments);
     };
 
-    Observable.prototype.invalidate = function(key) {
+    Observable.prototype.invalidate = function(keypath) {
       var observer, observers, _i, _len, _results;
-      observers = this._observersByKey[key];
+      observers = this._observersByKeypath[keypath];
       if (observers != null) {
         _results = [];
         for (_i = 0, _len = observers.length; _i < _len; _i++) {
@@ -66,17 +62,17 @@ define(function(require) {
       }
     };
 
-    Observable.prototype.on = function(key, observer) {
+    Observable.prototype.on = function(keypath, observer) {
       var _base, _ref;
-      if ((_ref = (_base = this._observersByKey)[key]) == null) {
-        _base[key] = [];
+      if ((_ref = (_base = this._observersByKeypath)[keypath]) == null) {
+        _base[keypath] = [];
       }
-      return this._observersByKey[key].push(observer);
+      return this._observersByKeypath[keypath].push(observer);
     };
 
-    Observable.prototype.off = function(key, observer) {
+    Observable.prototype.off = function(keypath, observer) {
       var i, os, _ref;
-      os = this._observersByKey[key];
+      os = this._observersByKeypath[keypath];
       if (os != null) {
         i = os.indexOf(observer);
         if (i !== -1) {
@@ -86,35 +82,82 @@ define(function(require) {
     };
 
     Observable.prototype._init = function() {
-      return this._observersByKey = {};
+      return this._observersByKeypath = {};
     };
 
-    Observable.prototype._setOne = function(key, value) {
-      var result;
-      result = this._processKeypath(key);
-      if (result.resolvedParent != null) {
-        result.resolvedParent[result.lastSegment] = value;
-        return this.invalidate(key);
+    Observable.prototype._setOne = function(keypath, value) {
+      var segments, successful;
+      segments = keypath.split(".");
+      successful = this._followAndSetKeypathSegments(this, segments, value);
+      if (successful) {
+        this.invalidate(keypath);
+      }
+      return successful;
+    };
+
+    Observable.prototype._followAndGetKeypathSegments = function(parent, segments) {
+      var firstSegment, resolvedObject;
+      if (segments.length === 1) {
+        if (this._getObjectType(parent) === "observableLike") {
+          return parent.get(segments[0]);
+        } else {
+          return parent[segments[0]];
+        }
+      } else {
+        if (this._getObjectType(parent) === "observableLike") {
+          return parent.get(segments.join("."));
+        } else {
+          firstSegment = segments.shift();
+          if (firstSegment in parent) {
+            resolvedObject = parent[firstSegment];
+            return this._followAndGetKeypathSegments(resolvedObject, segments);
+          } else {
+            return void 0;
+          }
+        }
       }
     };
 
-    Observable.prototype._processKeypath = function(keypath) {
-      var segments;
-      segments = keypath.split(".");
-      return this._processKeypathSegments(this, segments);
-    };
-
-    Observable.prototype._processKeypathSegments = function(parent, segments) {
+    Observable.prototype._followAndSetKeypathSegments = function(parent, segments, value) {
       var firstSegment, resolvedObject;
       if (segments.length === 1) {
-        return {
-          resolvedParent: parent,
-          lastSegment: segments[0]
-        };
+        switch (this._getObjectType(parent)) {
+          case "observableLike":
+            parent.set(segments[0], value);
+            return true;
+          case "mapLike":
+          case "self":
+            parent[segments[0]] = value;
+            return true;
+          default:
+            return false;
+        }
       } else {
-        firstSegment = segments.shift();
-        resolvedObject = parent[firstSegment];
-        return this._processKeypathSegments(resolvedObject, segments);
+        if (this._getObjectType(parent) === "observableLike") {
+          return parent.set(segments.join("."), value);
+        } else {
+          firstSegment = segments.shift();
+          resolvedObject = firstSegment in parent ? parent[firstSegment] : parent[firstSegment] = {};
+          return this._followAndSetKeypathSegments(resolvedObject, segments, value);
+        }
+      }
+    };
+
+    Observable.prototype._getObjectType = function(obj) {
+      if (obj != null) {
+        if (obj === this) {
+          return "self";
+        } else if (typeof obj.set === "function") {
+          return "observableLike";
+        } else if (Object.prototype.toString.call(obj) === "[object Array]") {
+          return "array";
+        } else if (obj instanceof Object) {
+          return "mapLike";
+        } else {
+          return "other";
+        }
+      } else {
+        return "nullLike";
       }
     };
 

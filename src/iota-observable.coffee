@@ -58,9 +58,11 @@ define (require) ->
         # because it most likely changed as well.
         
         # Build up a relation "when property 'keypath' (computed or not) changed, also inform computed property 'dependentKeypath'"
+        # We could do this also using the already available observer mechanism: @on keypath, => @invalidate(dependentKeypath)
+        # But then we don't have the option to separate the (kind of implicit) computed property observer calls from the rest.
         dependentKeypath = @_computedPropertyStack[@_computedPropertyStack.length - 1]
-        @on keypath, =>
-          @invalidate(dependentKeypath)
+        @_dependentKeypathsByKeypath[keypath] ?= {}
+        @_dependentKeypathsByKeypath[keypath][dependentKeypath] = true
       
       # Follow segments
       @_followAndGetKeypathSegments(@, segments, keypath)
@@ -76,8 +78,8 @@ define (require) ->
       # Call observers of computed properties which depend on this keypath
       dependentKeypaths = @_dependentKeypathsByKeypath[keypath]
       if dependentKeypaths?
-        for dependentKeypath, dummy in dependentKeypaths
-          invalidate(dependentKeypath, null, null)
+        for dependentKeypath of dependentKeypaths
+          @invalidate(dependentKeypath, null, null)
     
     # Registers the given observer for the given object property keypath.
     # If the observer was already registered before for this keypath, this method has no effect.

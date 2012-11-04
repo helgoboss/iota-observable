@@ -58,20 +58,20 @@ define(function(require) {
     };
 
     Observable.prototype.get = function(keypath) {
-      var dependentKeypath, segments,
-        _this = this;
+      var dependentKeypath, segments, _base, _ref;
       segments = keypath.split(".");
       if (this._computedPropertyStack.length > 0) {
         dependentKeypath = this._computedPropertyStack[this._computedPropertyStack.length - 1];
-        this.on(keypath, function() {
-          return _this.invalidate(dependentKeypath);
-        });
+        if ((_ref = (_base = this._dependentKeypathsByKeypath)[keypath]) == null) {
+          _base[keypath] = {};
+        }
+        this._dependentKeypathsByKeypath[keypath][dependentKeypath] = true;
       }
       return this._followAndGetKeypathSegments(this, segments, keypath);
     };
 
     Observable.prototype.invalidate = function(keypath, oldValue, newValue) {
-      var dependentKeypath, dependentKeypaths, dummy, id, observer, observers, _i, _len, _results;
+      var dependentKeypath, dependentKeypaths, id, observer, observers, _results;
       observers = this._observersByKeypath[keypath];
       if (observers != null) {
         for (id in observers) {
@@ -82,9 +82,8 @@ define(function(require) {
       dependentKeypaths = this._dependentKeypathsByKeypath[keypath];
       if (dependentKeypaths != null) {
         _results = [];
-        for (dummy = _i = 0, _len = dependentKeypaths.length; _i < _len; dummy = ++_i) {
-          dependentKeypath = dependentKeypaths[dummy];
-          _results.push(invalidate(dependentKeypath, null, null));
+        for (dependentKeypath in dependentKeypaths) {
+          _results.push(this.invalidate(dependentKeypath, null, null));
         }
         return _results;
       }

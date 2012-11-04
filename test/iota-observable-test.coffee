@@ -7,11 +7,11 @@ should = chai.should()
 chai.use(sinonChai)
 
 # TODO
-# - add dependency watching
-# - add dependency old/new
+# - Make sure that several dependency observers for one keypath are not fused together by the set mechanism (because the function is the same, i think)
+# - Implement transactions (delayed observer invocations) - also use them in set() with map!
 # - Prevent multiple invocation of observers in one set
-# - Implement transactions (delayed observer invocations)
 # - Implement throotled observer invocations
+# - add dependency old/new
 
 ## Reused stuff
 
@@ -137,11 +137,11 @@ createTests = (description, createObservable) ->
       o.get("x").should.equal 73
       callback.should.have.been.calledOnce
       
-    it "should call observers the correct number of times even in complicated dependency scenarios", ->
+    it "should call observers the correct number of times even in more complicated dependency scenarios", ->
       o.get("z").should.equal 73
       
-      callbackZ = sinon.spy()
       callbackX = sinon.spy()
+      callbackZ = sinon.spy()
       
       o.on "x", callbackX
       o.on "z", callbackZ
@@ -160,6 +160,31 @@ createTests = (description, createObservable) ->
       
       callbackX.should.have.been.calledOnce # because x depends on bar only
       callbackZ.should.have.been.calledTwice # because z depends on both bar and foo
+      
+    it "should not consider implicit dependency observers for the same keypath as equal", ->
+      # If x changes, both y and z observers should be informed
+      o.get("x").should.equal 72
+      o.get("y").should.equal 74
+      o.get("z").should.equal 73
+      
+      callbackX = sinon.spy()
+      callbackY = sinon.spy()
+      callbackZ = sinon.spy()
+      
+      o.on "x", callbackX
+      o.on "y", callbackY
+      o.on "z", callbackZ
+      
+      o.set
+        bar: 3
+        
+      o.get("x").should.equal 73
+      o.get("y").should.equal 75
+      o.get("z").should.equal 74
+      
+      callbackX.should.have.been.calledOnce # because x depends on bar only
+      callbackY.should.have.been.calledOnce # because x depends on bar only
+      callbackZ.should.have.been.calledOnce # because z depends on both bar and foo
       
       
     it "should call registered observers with undefined and new value when setting a new property value via set", ->

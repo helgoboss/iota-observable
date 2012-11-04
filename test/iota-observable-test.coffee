@@ -8,6 +8,10 @@ chai.use(sinonChai)
 
 # TODO
 # - add dependency watching
+# - add dependency old/new
+# - Prevent multiple invocation of observers in one set
+# - Implement transactions (delayed observer invocations)
+# - Implement throotled observer invocations
 
 ## Reused stuff
 
@@ -27,7 +31,7 @@ createTests = (description, createObservable) ->
       
     it "should return dependent computed property values using get", ->  
       o.get("dependentComputed").should.equal 72
-      
+
     it "should return nested property values using get", ->  
       o.get("nested.bum").should.equal 3
       
@@ -96,6 +100,69 @@ createTests = (description, createObservable) ->
 
       callback.should.have.been.calledWith(1, 3)
       
+    it "should call registered observers of a computed property when setting a dependency of the computed property via set", ->
+      o.get("x").should.equal 72
+      
+      callback = sinon.spy()
+      o.on "x", callback
+      
+      o.set
+        bar: 3
+
+      o.get("x").should.equal 73
+      callback.should.have.been.called
+      
+      console.log "-----"
+      
+    it "should call registered observers of a computed property y which depends on another computed property x when setting a dependency of the computed property (bar) via set", ->
+      o.get("y").should.equal 74
+      
+      callback = sinon.spy()
+      o.on "y", callback
+      
+      o.set
+        bar: 3
+
+      o.get("y").should.equal 75
+      callback.should.have.been.calledOnce
+      
+    it "should call registered observers of x as well", ->
+      o.get("y").should.equal 74
+      
+      callback = sinon.spy()
+      o.on "x", callback
+      
+      o.set
+        bar: 3
+
+      o.get("x").should.equal 73
+      callback.should.have.been.calledOnce
+      
+    it "should call observers the correct number of times even in complicated dependency scenarios", ->
+      o.get("z").should.equal 73
+      
+      callbackZ = sinon.spy()
+      callbackX = sinon.spy()
+      
+      o.on "x", callbackX
+      o.on "z", callbackZ
+      
+      o.set
+        bar: 3
+        
+      o.get("x").should.equal 73
+      o.get("z").should.equal 74
+        
+      o.set
+        foo: 2
+
+      o.get("x").should.equal 73
+      o.get("z").should.equal 75
+      
+      callbackX.should.have.been.calledOnce # because x depends on bar only
+      callbackZ.should.have.been.calledTwice # because z depends on both bar and foo
+      
+      
     it "should call registered observers with undefined and new value when setting a new property value via set", ->
       callback = sinon.spy()
       o.on "newProp", callback
@@ -163,6 +230,9 @@ createData = ->
   bar: 2
   computed: -> 77
   dependentComputed: -> @bar + 70
+  x: -> @get("bar") + 70
+  y: -> @get("x") + 2
+  z: -> @get("x") + @get("foo")
   computedNested: ->
     computed2: -> 22
   nested:
@@ -199,4 +269,4 @@ describe "Observable", ->
     
 
 createTests "An Observable instance", instantiateObservable
-createTests "An Observable instance", makeObservable
+# createTests "An Observable instance", makeObservable

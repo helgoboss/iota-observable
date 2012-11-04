@@ -50,31 +50,54 @@ define (require) ->
       # Split keypath into segments
       segments = keypath.split(".")
       
+      # Record dependencies
+      if @_recordedComputedProperty?
+        # We are just evaluating a computed property c. And we are in the get method of property d.
+        # That means, the computation of property c uses property d. We can also say, the computed
+        # property c depends on d. So later, whenever we set d, we also need to inform the observers of d
+        # because it most likely changed as well.
+        tmp = @_recordedComputedProperty
+        console.log "tracking #{keypath} => #{tmp}"
+        @on keypath, =>
+          console.log "invalidating " + tmp
+          @invalidate(tmp)
+      
       # Follow segments
-      @_followAndGetKeypathSegments(@, segments)
+      @_followAndGetKeypathSegments(@, segments, keypath)
     
     # Manually informs the observers about a change in the property with the given key.
     invalidate: (keypath, oldValue, newValue) ->
+      # Call observers of keypath
       observers = @_observersByKeypath[keypath]
       if observers?
-        for observer in observers 
+        for id, observer of observers
           observer(oldValue, newValue)
+          
+      # Call observers of computed properties which depend on this keypath
+      dependentKeypaths = @_dependentKeypathsByKeypath[keypath]
+      if dependentKeypaths?
+        for dependentKeypath, dummy in dependentKeypaths
+          invalidate(dependentKeypath, null, null)
     
     # Registers the given observer for the given object property keypath.
+    # If the observer was already registered before for this keypath, this method has no effect.
     on: (keypath, observer) ->
-      @_observersByKeypath[keypath] ?= []
-      @_observersByKeypath[keypath].push(observer)
+      @_observersByKeypath[keypath] ?= {}
+      # We want set behavior here (one observer must only occur one time), so we use an object instead of an array.
+      # Maybe use a more efficient set implementation here in future.
+      @_observersByKeypath[keypath][observer] = observer
     
     # Unregisters the given observer for the given object property keypath.
+    # If the observer was not registered before, this method has no effect.
     off: (keypath, observer) ->
-      os = @_observersByKeypath[keypath] 
-      if os?
-        i = os.indexOf(observer)
-        if i != -1
-          os[i..i] = []
+      observers = @_observersByKeypath[keypath] 
+      if observers?
+        delete observers[observer]
           
     _init: ->
       @_observersByKeypath = {}
+      @_dependentKeypathsByKeypath = {}
+      @_recordedComputedProperty = null
      
     _setOne: (keypath, value) ->
       # Split keypath into segments
@@ -89,13 +112,14 @@ define (require) ->
       # Return old value
       oldValue
       
-    _followAndGetKeypathSegments: (parent, segments) ->
+      
+    _followAndGetKeypathSegments: (parent, segments, keypath) ->
       if segments.length == 1
         # Everything resolved. Resolve last one.
         if @_getObjectType(parent) == "observableLike"
           parent.get(segments[0])
         else
-          @_invokeIfNecessary parent[segments[0]]
+          @_invokeIfNecessary parent[segments[0]], keypath
       else
         # Still some segments left.
         if @_getObjectType(parent) == "observableLike"
@@ -106,8 +130,8 @@ define (require) ->
           firstSegment = segments.shift()
           if firstSegment of parent
             # Property is defined
-            resolvedObject = @_invokeIfNecessary parent[firstSegment]
-            @_followAndGetKeypathSegments(resolvedObject, segments)
+            resolvedObject = @_invokeIfNecessary parent[firstSegment], keypath
+            @_followAndGetKeypathSegments(resolvedObject, segments, keypath)
           else
             # Property is not defined. Dead end. Return undefined.
             undefined
@@ -137,7 +161,7 @@ define (require) ->
           firstSegment = segments.shift()
           resolvedObject = if firstSegment of parent
             # Property is defined.
-            @_invokeIfNecessary parent[firstSegment]
+            @_invokeIfNecessary parent[firstSegment], null
           else
             # Property is not defined. Dead end. Doesn't matter. Pave the way.
             parent[firstSegment] = {}
@@ -145,10 +169,17 @@ define (require) ->
           # Go on processing remaining segments by doing recursion.
           @_followAndSetKeypathSegments(resolvedObject, segments, value)
     
-    _invokeIfNecessary: (obj) ->
+    _invokeIfNecessary: (obj, keypath) ->
       if typeof obj == "function"
-        obj.apply(@)
+        # Computed property
+        console.log "invoking " + keypath
+        @_recordedComputedProperty = keypath
+        try
+          obj.apply(@)
+        finally
+          @_recordedComputedProperty = null
       else
+        # Normal property
         obj
     
     _getObjectType: (obj) ->

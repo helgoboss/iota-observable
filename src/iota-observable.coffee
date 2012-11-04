@@ -3,7 +3,7 @@
 
 define (require) ->
   class Observable
-    @SetFailed: class extends Error
+    @SetOperationFailed: class extends Error
       constructor: (obj, key, value) ->
         @message = "Setting [#{key}] to [#{value}] on [#{obj}] failed"
     
@@ -151,7 +151,7 @@ define (require) ->
             oldValue
           else
             # Cannot set value
-            throw new Observable.SetFailed(parent, segments[0], value)
+            throw new Observable.SetOperationFailed(parent, segments[0], value)
       else
         # Still some segments left. 
         if @_getObjectType(parent) == "observableLike"

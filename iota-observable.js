@@ -8,7 +8,7 @@ define(function(require) {
   var Observable;
   return Observable = (function() {
 
-    Observable.SetFailed = (function(_super) {
+    Observable.SetOperationFailed = (function(_super) {
 
       __extends(_Class, _super);
 
@@ -159,7 +159,7 @@ define(function(require) {
             parent[segments[0]] = value;
             return oldValue;
           default:
-            throw new Observable.SetFailed(parent, segments[0], value);
+            throw new Observable.SetOperationFailed(parent, segments[0], value);
         }
       } else {
         if (this._getObjectType(parent) === "observableLike") {

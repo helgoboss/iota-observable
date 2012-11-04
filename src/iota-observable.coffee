@@ -58,10 +58,8 @@ define (require) ->
         # because it most likely changed as well.
         
         # Build up a relation "when property 'keypath' (computed or not) changed, also inform computed property 'dependentKeypath'"
-        dependentKeypath = @_computedPropertyStack.pop()
-        console.log "tracking #{keypath} => #{dependentKeypath}"
+        dependentKeypath = @_computedPropertyStack[@_computedPropertyStack.length - 1]
         @on keypath, =>
-          console.log "invalidating " + dependentKeypath
           @invalidate(dependentKeypath)
       
       # Follow segments
@@ -174,7 +172,6 @@ define (require) ->
     _invokeIfNecessary: (obj, keypath) ->
       if typeof obj == "function"
         # Computed property
-        console.log "invoking " + keypath
         @_computedPropertyStack.push keypath
         try
           obj.apply(@)

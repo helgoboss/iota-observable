@@ -58,15 +58,13 @@ define(function(require) {
     };
 
     Observable.prototype.get = function(keypath) {
-      var segments, tmp,
+      var dependentKeypath, segments,
         _this = this;
       segments = keypath.split(".");
-      if (this._recordedComputedProperty != null) {
-        tmp = this._recordedComputedProperty;
-        console.log("tracking " + keypath + " => " + tmp);
+      if (this._computedPropertyStack.length > 0) {
+        dependentKeypath = this._computedPropertyStack[this._computedPropertyStack.length - 1];
         this.on(keypath, function() {
-          console.log("invalidating " + tmp);
-          return _this.invalidate(tmp);
+          return _this.invalidate(dependentKeypath);
         });
       }
       return this._followAndGetKeypathSegments(this, segments, keypath);
@@ -111,7 +109,7 @@ define(function(require) {
     Observable.prototype._init = function() {
       this._observersByKeypath = {};
       this._dependentKeypathsByKeypath = {};
-      return this._recordedComputedProperty = null;
+      return this._computedPropertyStack = [];
     };
 
     Observable.prototype._setOne = function(keypath, value) {
@@ -174,12 +172,11 @@ define(function(require) {
 
     Observable.prototype._invokeIfNecessary = function(obj, keypath) {
       if (typeof obj === "function") {
-        console.log("invoking " + keypath);
-        this._recordedComputedProperty = keypath;
+        this._computedPropertyStack.push(keypath);
         try {
           return obj.apply(this);
         } finally {
-          this._recordedComputedProperty = null;
+          this._computedPropertyStack.pop();
         }
       } else {
         return obj;

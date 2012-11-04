@@ -112,7 +112,6 @@ createTests = (description, createObservable) ->
       o.get("x").should.equal 73
       callback.should.have.been.called
       
-      console.log "-----"
       
     it "should call registered observers of a computed property y which depends on another computed property x when setting a dependency of the computed property (bar) via set", ->
       o.get("y").should.equal 74

@@ -3,6 +3,10 @@
 
 define (require) ->
   class Observable
+    @SetFailed: class extends Error
+      constructor: (obj, key, value) ->
+        @message = "Setting [#{key}] to [#{value}] on [#{obj}] failed"
+    
     # Static method used to mixin the Observable methods to the given object and initialize it.
     @makeObservable: (obj) ->
       # Copy Observable's prototype properties to the object
@@ -27,9 +31,9 @@ define (require) ->
     # Follows the keypath and sets the referenced property to the given value.
     # If it meets a dead end on the path (an object which doesn't define the
     # property next on the keypath), it just creates an empty object and continues following.
-    # Returns whether it could set the value. It cannot set the value if
-    # it stumbles upon a defined property whose type is not map-like.
-    # If multiple properties are set, returns and array of booleans.
+    # Returns the old value or undefined if there was none. If it cannot set the value because
+    # it stumbles upon a defined property whose type is not map-like, it throws an error.
+    # If multiple properties are set, returns and array of old values.
     set: (args...) ->
       if args.length == 1
         # A map containing new keypath-value pairs has been given
@@ -50,11 +54,11 @@ define (require) ->
       @_followAndGetKeypathSegments(@, segments)
     
     # Manually informs the observers about a change in the property with the given key.
-    invalidate: (keypath) ->
+    invalidate: (keypath, oldValue, newValue) ->
       observers = @_observersByKeypath[keypath]
       if observers?
         for observer in observers 
-          observer()
+          observer(oldValue, newValue)
     
     # Registers the given observer for the given object property keypath.
     on: (keypath, observer) ->
@@ -77,12 +81,13 @@ define (require) ->
       segments = keypath.split(".")
       
       # Follow segments
-      successful = @_followAndSetKeypathSegments(@, segments, value)
+      oldValue = @_followAndSetKeypathSegments(@, segments, value)
       
-      if successful
-        @invalidate(keypath)
-        
-      successful
+      # Inform observers
+      @invalidate(keypath, oldValue, value)
+      
+      # Return old value
+      oldValue
       
     _followAndGetKeypathSegments: (parent, segments) ->
       if segments.length == 1
@@ -112,14 +117,16 @@ define (require) ->
         # Everything resolved. Set value.
         switch @_getObjectType(parent)
           when "observableLike"
+            oldValue = parent.get segments[0]
             parent.set(segments[0], value)
-            true
+            oldValue
           when "mapLike", "self"
+            oldValue = parent[segments[0]]
             parent[segments[0]] = value
-            true
+            oldValue
           else
             # Cannot set value
-            false
+            throw new Observable.SetFailed(parent, segments[0], value)
       else
         # Still some segments left. 
         if @_getObjectType(parent) == "observableLike"

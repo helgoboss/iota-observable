@@ -1,10 +1,24 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module) };
 
-var __slice = [].slice;
+var __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __slice = [].slice;
 
 define(function(require) {
   var Observable;
   return Observable = (function() {
+
+    Observable.SetFailed = (function(_super) {
+
+      __extends(_Class, _super);
+
+      function _Class(obj, key, value) {
+        this.message = "Setting [" + key + "] to [" + value + "] on [" + obj + "] failed";
+      }
+
+      return _Class;
+
+    })(Error);
 
     Observable.makeObservable = function(obj) {
       var key, value, _ref;
@@ -49,14 +63,14 @@ define(function(require) {
       return this._followAndGetKeypathSegments(this, segments);
     };
 
-    Observable.prototype.invalidate = function(keypath) {
+    Observable.prototype.invalidate = function(keypath, oldValue, newValue) {
       var observer, observers, _i, _len, _results;
       observers = this._observersByKeypath[keypath];
       if (observers != null) {
         _results = [];
         for (_i = 0, _len = observers.length; _i < _len; _i++) {
           observer = observers[_i];
-          _results.push(observer());
+          _results.push(observer(oldValue, newValue));
         }
         return _results;
       }
@@ -86,13 +100,11 @@ define(function(require) {
     };
 
     Observable.prototype._setOne = function(keypath, value) {
-      var segments, successful;
+      var oldValue, segments;
       segments = keypath.split(".");
-      successful = this._followAndSetKeypathSegments(this, segments, value);
-      if (successful) {
-        this.invalidate(keypath);
-      }
-      return successful;
+      oldValue = this._followAndSetKeypathSegments(this, segments, value);
+      this.invalidate(keypath, oldValue, value);
+      return oldValue;
     };
 
     Observable.prototype._followAndGetKeypathSegments = function(parent, segments) {
@@ -119,18 +131,20 @@ define(function(require) {
     };
 
     Observable.prototype._followAndSetKeypathSegments = function(parent, segments, value) {
-      var firstSegment, resolvedObject;
+      var firstSegment, oldValue, resolvedObject;
       if (segments.length === 1) {
         switch (this._getObjectType(parent)) {
           case "observableLike":
+            oldValue = parent.get(segments[0]);
             parent.set(segments[0], value);
-            return true;
+            return oldValue;
           case "mapLike":
           case "self":
+            oldValue = parent[segments[0]];
             parent[segments[0]] = value;
-            return true;
+            return oldValue;
           default:
-            return false;
+            throw new Observable.SetFailed(parent, segments[0], value);
         }
       } else {
         if (this._getObjectType(parent) === "observableLike") {

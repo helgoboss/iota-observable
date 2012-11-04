@@ -51,16 +51,18 @@ define (require) ->
       segments = keypath.split(".")
       
       # Record dependencies
-      if @_recordedComputedProperty?
+      if @_computedPropertyStack.length > 0
         # We are just evaluating a computed property c. And we are in the get method of property d.
         # That means, the computation of property c uses property d. We can also say, the computed
         # property c depends on d. So later, whenever we set d, we also need to inform the observers of d
         # because it most likely changed as well.
-        tmp = @_recordedComputedProperty
-        console.log "tracking #{keypath} => #{tmp}"
+        
+        # Build up a relation "when property 'keypath' (computed or not) changed, also inform computed property 'dependentKeypath'"
+        dependentKeypath = @_computedPropertyStack.pop()
+        console.log "tracking #{keypath} => #{dependentKeypath}"
         @on keypath, =>
-          console.log "invalidating " + tmp
-          @invalidate(tmp)
+          console.log "invalidating " + dependentKeypath
+          @invalidate(dependentKeypath)
       
       # Follow segments
       @_followAndGetKeypathSegments(@, segments, keypath)
@@ -97,7 +99,7 @@ define (require) ->
     _init: ->
       @_observersByKeypath = {}
       @_dependentKeypathsByKeypath = {}
-      @_recordedComputedProperty = null
+      @_computedPropertyStack = []
      
     _setOne: (keypath, value) ->
       # Split keypath into segments
@@ -173,11 +175,11 @@ define (require) ->
       if typeof obj == "function"
         # Computed property
         console.log "invoking " + keypath
-        @_recordedComputedProperty = keypath
+        @_computedPropertyStack.push keypath
         try
           obj.apply(@)
         finally
-          @_recordedComputedProperty = null
+          @_computedPropertyStack.pop()
       else
         # Normal property
         obj

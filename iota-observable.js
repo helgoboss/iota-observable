@@ -101,7 +101,7 @@ define(function(require) {
         if (this._getObjectType(parent) === "observableLike") {
           return parent.get(segments[0]);
         } else {
-          return parent[segments[0]];
+          return this._invokeIfNecessary(parent[segments[0]]);
         }
       } else {
         if (this._getObjectType(parent) === "observableLike") {
@@ -109,7 +109,7 @@ define(function(require) {
         } else {
           firstSegment = segments.shift();
           if (firstSegment in parent) {
-            resolvedObject = parent[firstSegment];
+            resolvedObject = this._invokeIfNecessary(parent[firstSegment]);
             return this._followAndGetKeypathSegments(resolvedObject, segments);
           } else {
             return void 0;
@@ -137,9 +137,17 @@ define(function(require) {
           return parent.set(segments.join("."), value);
         } else {
           firstSegment = segments.shift();
-          resolvedObject = firstSegment in parent ? parent[firstSegment] : parent[firstSegment] = {};
+          resolvedObject = firstSegment in parent ? this._invokeIfNecessary(parent[firstSegment]) : parent[firstSegment] = {};
           return this._followAndSetKeypathSegments(resolvedObject, segments, value);
         }
+      }
+    };
+
+    Observable.prototype._invokeIfNecessary = function(obj) {
+      if (typeof obj === "function") {
+        return obj();
+      } else {
+        return obj;
       }
     };
 

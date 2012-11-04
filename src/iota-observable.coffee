@@ -90,7 +90,7 @@ define (require) ->
         if @_getObjectType(parent) == "observableLike"
           parent.get(segments[0])
         else
-          parent[segments[0]]
+          @_invokeIfNecessary parent[segments[0]]
       else
         # Still some segments left.
         if @_getObjectType(parent) == "observableLike"
@@ -101,7 +101,7 @@ define (require) ->
           firstSegment = segments.shift()
           if firstSegment of parent
             # Property is defined
-            resolvedObject = parent[firstSegment]
+            resolvedObject = @_invokeIfNecessary parent[firstSegment]
             @_followAndGetKeypathSegments(resolvedObject, segments)
           else
             # Property is not defined. Dead end. Return undefined.
@@ -130,13 +130,19 @@ define (require) ->
           firstSegment = segments.shift()
           resolvedObject = if firstSegment of parent
             # Property is defined.
-            parent[firstSegment]
+            @_invokeIfNecessary parent[firstSegment]
           else
             # Property is not defined. Dead end. Doesn't matter. Pave the way.
             parent[firstSegment] = {}
           
           # Go on processing remaining segments by doing recursion.
           @_followAndSetKeypathSegments(resolvedObject, segments, value)
+    
+    _invokeIfNecessary: (obj) ->
+      if typeof obj == "function"
+        obj()
+      else
+        obj
     
     _getObjectType: (obj) ->
       if obj?

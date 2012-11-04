@@ -7,7 +7,6 @@ should = chai.should()
 chai.use(sinonChai)
 
 # TODO
-# - add nested property support
 # - add computed properties
 # - add dependency watching
 # - add observer parameters (old/new)
@@ -25,8 +24,14 @@ createTests = (description, createObservable) ->
     it "should return property values using get", ->  
       o.get("foo").should.equal 1
       
+    it "should return computed property values using get", ->  
+      o.get("computed").should.equal 77
+      
     it "should return nested property values using get", ->  
       o.get("nested.bum").should.equal 3
+      
+    it "should return nested computed property values using get", ->  
+      o.get("computedNested.computed2").should.equal 22
       
     it "should return nested observable property values using get", ->  
       o.get("nested.observableObj.observedProp").should.equal 7
@@ -154,6 +159,9 @@ createTests = (description, createObservable) ->
 createData = ->
   foo: 1
   bar: 2
+  computed: -> 77
+  computedNested: ->
+    computed2: -> 22
   nested:
     bum: 3
     observableObj: new Observable

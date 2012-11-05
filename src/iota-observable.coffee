@@ -35,7 +35,9 @@ define (require) ->
     # it stumbles upon a defined property whose type is not map-like, it throws an error.
     # If multiple properties are set, returns and array of old values.
     set: (args...) ->
-      if args.length == 1
+      transactionStarted = @startTransaction()
+      
+      oldValue = if args.length == 1
         # A map containing new keypath-value pairs has been given
         properties = args[0]
         for keypath, value of properties
@@ -44,6 +46,10 @@ define (require) ->
         # Two arguments (a keypath and a value) have been given
         @_setOne(args[0], args[1])
         
+      if transactionStarted
+        @commit()
+        
+      oldValue
         
     # Returns the property with the given keypath.
     get: (keypath) ->
@@ -68,18 +74,28 @@ define (require) ->
       @_followAndGetKeypathSegments(@, segments, keypath)
     
     # Manually informs the observers about a change in the property with the given key.
+    # Delays the notification if a transaction active until commit is called.
     invalidate: (keypath, oldValue, newValue) ->
-      # Call observers of keypath
-      observers = @_observersByKeypath[keypath]
-      if observers?
-        for observer in observers
-          observer(oldValue, newValue)
-          
-      # Call observers of computed properties which depend on this keypath
+      transactionStarted = @startTransaction()
+      
+      # Memorize keypath so its observers can be informed later, after the transaction has been committed
+      if keypath of @_invalidationByKeypath
+        # There's already an invalidation for that keypath. Just replace its newValue.
+        @_invalidationByKeypath[keypath].newValue = newValue
+      else
+        # There's no invalidation for that keypath yet.
+        @_invalidationByKeypath[keypath] =
+          oldValue: oldValue
+          newValue: newValue
+      
+      # Invalidate computed properties which depend on this keypath
       dependentKeypaths = @_dependentKeypathsByKeypath[keypath]
       if dependentKeypaths?
         for dependentKeypath of dependentKeypaths
           @invalidate(dependentKeypath, null, null)
+          
+      if transactionStarted
+        @commit()
     
     # Registers the given observer for the given object property keypath.
     on: (keypath, observer) ->
@@ -95,10 +111,42 @@ define (require) ->
         if i != -1
           observers[i..i] = []
           
+    # Starts a transaction. Within a transaction, no observers are notified of changes.
+    # The notifications are done as soon as commit is called.
+    # If a transaction was already active, the method has no effect and returns false.
+    startTransaction: ->
+      if @_inTransaction
+        false
+      else
+        @_inTransaction = true
+        true
+    
+    # Ends the transaction. It carries out the delayed observer notifications.
+    # If no transaction was active, the method has no effect and returns false.
+    commit: ->
+      if @_inTransaction
+        @_inTransaction = false
+        
+        # Call observers of keypath. Make for each keypath-observer combination exactly one call.
+        for keypath, invalidation of @_invalidationByKeypath
+          observers = @_observersByKeypath[keypath]
+          if observers?
+            for observer in observers
+              observer(keypath, invalidation.oldValue, invalidation.newValue)
+          
+          # Remove invalidation
+          delete @_invalidationByKeypath[keypath]
+        true
+      else
+        false
+      
+          
     _init: ->
       @_observersByKeypath = {}
       @_dependentKeypathsByKeypath = {}
       @_computedPropertyStack = []
+      @_inTransaction = false
+      @_invalidationByKeypath = {}
      
     _setOne: (keypath, value) ->
       # Split keypath into segments
@@ -181,7 +229,7 @@ define (require) ->
       else
         # Normal property
         obj
-    
+        
     _getObjectType: (obj) ->
       if obj?
         if obj == this

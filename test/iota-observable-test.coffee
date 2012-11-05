@@ -90,6 +90,14 @@ createTests = (description, createObservable) ->
       o.get("foo").should.equal 3
       o.get("bar").should.equal 4
           
+    it "should call registered observers when calling invalidate for a property", ->
+      callback = sinon.spy()
+      o.on "foo", callback
+      
+      o.invalidate("foo")
+
+      callback.should.have.been.calledOnce
+      
     it "should call registered observers with old and new value when setting a property value via set", ->
       callback = sinon.spy()
       o.on "foo", callback
@@ -97,7 +105,39 @@ createTests = (description, createObservable) ->
       o.set
         foo: 3
 
-      callback.should.have.been.calledWith(1, 3)
+      callback.should.have.been.calledWith("foo", 1, 3)
+
+    it "should call registered observers on each two-arguments set invocation", ->
+      callback = sinon.spy()
+      o.on "foo", callback
+      
+      o.set("foo", 3)
+      o.set("foo", 3)
+
+      callback.should.have.been.calledTwice
+      
+    it "shouldn't call observers within a transaction", ->
+      callback = sinon.spy()
+      o.on "foo", callback
+      
+      o.startTransaction()
+      o.set("foo", 3)
+      callback.should.not.have.been.called
+      o.commit()
+      
+      callback.should.have.been.calledOnce
+      
+    it "should call observers for each invalidated property only once after transaction commit", ->
+      callback = sinon.spy()
+      o.on "foo", callback
+      
+      o.startTransaction()
+      o.set("foo", 3)
+      o.set("foo", 3)
+      o.commit()
+      
+      callback.should.have.been.calledOnce
+      
       
     it "should call registered observers of a computed property when setting a dependency of the computed property via set", ->
       o.get("x").should.equal 72
@@ -160,6 +200,34 @@ createTests = (description, createObservable) ->
       callbackX.should.have.been.calledOnce # because x depends on bar only
       callbackZ.should.have.been.calledTwice # because z depends on both bar and foo
       
+    it "should call each observer for each changed property only once with computed properties", ->
+      # Query computed property at least once so dependencies are tracked
+      o.get("diamond")
+      
+      callback = sinon.spy()
+      o.on "diamond", callback
+      
+      o.set
+        bar: 3
+      
+      # A less-than-optimal implementation might call the observer of the computed property 
+      # "diamond" two times because both of its dependencies have changed
+      callback.should.have.been.calledOnce 
+      
+    it "should call each observer for each changed property only once when calling set with a map (atomic set operation)", ->
+      # Query computed property at least once so dependencies are tracked
+      o.get("z")
+      
+      callback = sinon.spy()
+      
+      o.on "z", callback
+      
+      o.set
+        bar: 3
+        foo: 2
+      
+      callback.should.have.been.calledOnce 
+      
     it "should not consider implicit dependency observers for the same keypath as equal", ->
       # If x changes, both y and z observers should be informed
       o.get("x").should.equal 72
@@ -193,7 +261,7 @@ createTests = (description, createObservable) ->
       o.set
         newProp: 3
 
-      callback.should.have.been.calledWith(undefined, 3)
+      callback.should.have.been.calledWith("newProp", undefined, 3)
       
     it "should call registered observers when setting a nested property value via set", ->
       callback = sinon.spy()
@@ -201,7 +269,7 @@ createTests = (description, createObservable) ->
       
       o.set("nested.baz", 3)
 
-      callback.should.have.been.calledWith(undefined, 3)
+      callback.should.have.been.calledWith("nested.baz", undefined, 3)
       
     it "should also call registered observers of last nested observable when setting a nested property value via set", ->
       nestedCallback = sinon.spy()
@@ -212,8 +280,8 @@ createTests = (description, createObservable) ->
       
       o.set("nested.observableObj.observedProp", 3)
 
-      callback.should.have.been.calledWith(7, 3)
-      nestedCallback.should.have.been.calledWith(7, 3)
+      callback.should.have.been.calledWith("nested.observableObj.observedProp", 7, 3)
+      nestedCallback.should.have.been.calledWith("observedProp", 7, 3)
       
     it "should also call registered observers of middle nested observable when setting a nested property value via set", ->
       nestedCallback = sinon.spy()
@@ -224,8 +292,8 @@ createTests = (description, createObservable) ->
       
       o.set("nested.observableObj.observableObj2.observedProp2", 3)
 
-      callback.should.have.been.calledWith(8, 3)
-      nestedCallback.should.have.been.calledWith(8, 3)
+      callback.should.have.been.calledWith("nested.observableObj.observableObj2.observedProp2", 8, 3)
+      nestedCallback.should.have.been.calledWith("observableObj2.observedProp2", 8, 3)
       
     it "should not call unregistered observers when setting a property value via set", ->
       callback = sinon.spy()
@@ -256,6 +324,7 @@ createData = ->
   x: -> @get("bar") + 70
   y: -> @get("x") + 2
   z: -> @get("x") + @get("foo")
+  diamond: -> @get("x") + @get("z")
   computedNested: ->
     computed2: -> 22
   nested:

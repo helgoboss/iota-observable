@@ -42,19 +42,27 @@ define(function(require) {
     }
 
     Observable.prototype.set = function() {
-      var args, keypath, properties, value, _results;
+      var args, keypath, oldValue, properties, transactionStarted, value;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (args.length === 1) {
-        properties = args[0];
-        _results = [];
-        for (keypath in properties) {
-          value = properties[keypath];
-          _results.push(this._setOne(keypath, value));
+      transactionStarted = this.startTransaction();
+      oldValue = (function() {
+        var _results;
+        if (args.length === 1) {
+          properties = args[0];
+          _results = [];
+          for (keypath in properties) {
+            value = properties[keypath];
+            _results.push(this._setOne(keypath, value));
+          }
+          return _results;
+        } else {
+          return this._setOne(args[0], args[1]);
         }
-        return _results;
-      } else {
-        return this._setOne(args[0], args[1]);
+      }).call(this);
+      if (transactionStarted) {
+        this.commit();
       }
+      return oldValue;
     };
 
     Observable.prototype.get = function(keypath) {
@@ -71,21 +79,24 @@ define(function(require) {
     };
 
     Observable.prototype.invalidate = function(keypath, oldValue, newValue) {
-      var dependentKeypath, dependentKeypaths, observer, observers, _i, _len, _results;
-      observers = this._observersByKeypath[keypath];
-      if (observers != null) {
-        for (_i = 0, _len = observers.length; _i < _len; _i++) {
-          observer = observers[_i];
-          observer(oldValue, newValue);
-        }
+      var dependentKeypath, dependentKeypaths, transactionStarted;
+      transactionStarted = this.startTransaction();
+      if (keypath in this._invalidationByKeypath) {
+        this._invalidationByKeypath[keypath].newValue = newValue;
+      } else {
+        this._invalidationByKeypath[keypath] = {
+          oldValue: oldValue,
+          newValue: newValue
+        };
       }
       dependentKeypaths = this._dependentKeypathsByKeypath[keypath];
       if (dependentKeypaths != null) {
-        _results = [];
         for (dependentKeypath in dependentKeypaths) {
-          _results.push(this.invalidate(dependentKeypath, null, null));
+          this.invalidate(dependentKeypath, null, null);
         }
-        return _results;
+      }
+      if (transactionStarted) {
+        return this.commit();
       }
     };
 
@@ -108,10 +119,43 @@ define(function(require) {
       }
     };
 
+    Observable.prototype.startTransaction = function() {
+      if (this._inTransaction) {
+        return false;
+      } else {
+        this._inTransaction = true;
+        return true;
+      }
+    };
+
+    Observable.prototype.commit = function() {
+      var invalidation, keypath, observer, observers, _i, _len, _ref;
+      if (this._inTransaction) {
+        this._inTransaction = false;
+        _ref = this._invalidationByKeypath;
+        for (keypath in _ref) {
+          invalidation = _ref[keypath];
+          observers = this._observersByKeypath[keypath];
+          if (observers != null) {
+            for (_i = 0, _len = observers.length; _i < _len; _i++) {
+              observer = observers[_i];
+              observer(keypath, invalidation.oldValue, invalidation.newValue);
+            }
+          }
+          delete this._invalidationByKeypath[keypath];
+        }
+        return true;
+      } else {
+        return false;
+      }
+    };
+
     Observable.prototype._init = function() {
       this._observersByKeypath = {};
       this._dependentKeypathsByKeypath = {};
-      return this._computedPropertyStack = [];
+      this._computedPropertyStack = [];
+      this._inTransaction = false;
+      return this._invalidationByKeypath = {};
     };
 
     Observable.prototype._setOne = function(keypath, value) {

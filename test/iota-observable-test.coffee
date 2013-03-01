@@ -7,9 +7,7 @@ should = chai.should()
 chai.use(sinonChai)
 
 # TODO
-# - Implement transactions (delayed observer invocations) - also use them in set() with map!
-# - Prevent multiple invocation of observers in one set
-# - Implement throotled observer invocations
+# - Implement throttled observer invocations
 # - add dependency old/new
 
 ## Reused stuff

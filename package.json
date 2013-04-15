@@ -1,9 +1,9 @@
 {
   "name": "iota-observable",
-  "version": "0.1.0",
-  "description": "Provides a mixin which you can add to any object to make its property changes observable. Plays together with Rivets JS.",
+  "version": "1.0.0",
+  "description": "JavaScript library for making objects observable",
   "keywords": ["observable", "rivets"],
-  "homepage": "http://github.com/helgoboss/iota-observable",
+  "homepage": "http://www.helgoboss.org/projects/iota-observable/",
   "author": "Benjamin Klum <benjamin.klum@helgoboss.org>",
   "licenses": [
       {

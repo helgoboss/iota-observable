@@ -29,6 +29,8 @@ obj.set 'firstName', 'Béla'
 
 ### With Rivets (CoffeeScript)
 
+Needs [jQuery](http://jquery.com/) and [Iota Rivets Observable Adapter](http://github.com/helgoboss/iota-rivets-observable-adapter).
+
 ```coffeescript
 # Create counter object, mix in Observable
 model =
@@ -36,7 +38,6 @@ model =
     value: 5
 
 # Bind counter value to a DOM element
-# (needs iota-rivets-observable-adapter)
 template = '&lt;div data-text="counter.value" /&gt;'
 domElement = $(template)[0]
 rivets.bind(domElement, model)

@@ -114,25 +114,25 @@ createTests = (description, createObservable) ->
 
       callback.should.have.been.calledTwice
       
-    it "shouldn't call observers within a transaction", ->
+    it "shouldn't call observers within a batch", ->
       callback = sinon.spy()
       o.on "foo", callback
       
-      o.startTransaction()
+      o.beginBatch()
       o.set("foo", 3)
       callback.should.not.have.been.called
-      o.commit()
+      o.endBatch()
       
       callback.should.have.been.calledOnce
       
-    it "should call observers for each invalidated property only once after transaction commit", ->
+    it "should call observers for each invalidated property only once after ending batch", ->
       callback = sinon.spy()
       o.on "foo", callback
       
-      o.startTransaction()
+      o.beginBatch()
       o.set("foo", 3)
       o.set("foo", 3)
-      o.commit()
+      o.endBatch()
       
       callback.should.have.been.calledOnce
       

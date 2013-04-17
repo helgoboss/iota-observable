@@ -15,11 +15,16 @@ For JavaScript examples, please visit the [project website](http://www.helgoboss
 # Extend from Observable
 class Person extends Observable
   constructor: (@firstName, @lastName) ->
+    super()
+    
   name: -> 
     @get('firstName') + ' ' + @get('lastName')
 
 # Create a person
-obj = new Person "Bela", "Bartók"
+obj = new Person 'Bela', 'Bartók'
+
+# Query initial value of name (normally done by view)
+console.log 'Initial name: ' + obj.get('name')
 
 # Register observer
 obj.on 'name', -> console.log("Name has changed")
@@ -33,16 +38,20 @@ obj.set 'firstName', 'Béla'
 Needs [jQuery](http://jquery.com/) and [Rivets Iota Observable Adapter](http://github.com/helgoboss/rivets-iota-observable-adapter).
 
 ```coffeescript
-# Create counter object, make raw object Observable
+# Create counter object and make it Observable
 model =
-  counter: Observable.makeObservable
+  counter:
     value: 5
+    
+Observable.makeObservable model.counter
 
 # Bind counter value to a DOM element
-# (needs jQuery and iota-rivets-observable-adapter)
 template = '<div data-text="counter.value" />'
 domElement = $(template)[0]
 rivets.bind(domElement, model)
+
+# Append DOM element to main tree
+$(domElement).appendTo "body"
 ```
 
 ## Further reading

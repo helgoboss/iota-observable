@@ -29,7 +29,7 @@ obj.set 'firstName', 'Béla'
 
 ### With Rivets (CoffeeScript)
 
-Needs [jQuery](http://jquery.com/) and [Iota Rivets Observable Adapter](http://github.com/helgoboss/iota-rivets-observable-adapter).
+Needs [jQuery](http://jquery.com/) and [Rivets Iota Observable Adapter](http://github.com/helgoboss/rivets-iota-observable-adapter).
 
 ```coffeescript
 # Create counter object, mix in Observable

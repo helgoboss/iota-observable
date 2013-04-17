@@ -2,7 +2,7 @@
   "name": "iota-observable",
   "version": "1.0.0",
   "description": "JavaScript library for making objects observable",
-  "keywords": ["observable", "rivets"],
+  "keywords": ["observer", "rivets", "listener", "data binding"],
   "homepage": "http://www.helgoboss.org/projects/iota-observable/",
   "author": "Benjamin Klum <benjamin.klum@helgoboss.org>",
   "licenses": [

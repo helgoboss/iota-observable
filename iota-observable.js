@@ -1,5 +1,4 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module) };
-
 var Observable,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -7,15 +6,14 @@ var Observable,
 
 Observable = (function() {
   /*
-    An object which notifies observers whenever a property is changed using `set`.
+  An object which notifies observers whenever a property is changed using `set`.
   */
 
   Observable.SetOperationFailed = (function(_super) {
-
     __extends(_Class, _super);
 
     /*
-        Error thrown if a property value could not be set.
+    Error thrown if a property value could not be set.
     */
 
 
@@ -29,7 +27,7 @@ Observable = (function() {
 
   Observable.makeObservable = function(obj) {
     /*
-        Makes the given object `obj` observable by copying all `Observable` methods to it and initializing the `Observable`'s state.
+    Makes the given object `obj` observable by copying all `Observable` methods to it and initializing the `Observable`'s state.
     */
 
     var key, value, _ref;
@@ -43,7 +41,7 @@ Observable = (function() {
 
   function Observable(obj) {
     /*
-        Initializes the Observable. If `obj` is given, all its properties are copied into the new `Observable`.
+    Initializes the Observable. If `obj` is given, all its properties are copied into the new `Observable`.
     */
 
     var key, value;
@@ -60,18 +58,18 @@ Observable = (function() {
     var args, batchStarted, keypath, oldValue, properties, value;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     /*
-        Sets the values of one or several properties of this object or nested objects and informs observers.
-        
-        If a single argument is passed, it is assumed to be an object containing keypath-value pairs. If two arguments 
-        are passed, the first one is interpreted as the keypath and the second one as the value.
-        
-        The property is identified by its keypath using the dot notation. The implementation follows the keypath 
-        and sets the referenced property to the given value. If it meets a dead end on the path (an object which 
-        doesn't contain the property which comes next on the keypath), it just creates an empty object and continues 
-        with the rest of the keypath. If it cannot set the value because it stumbles upon a defined property whose type is 
-        not an object, it throws an `Observable.SetOperationFailed` error.
-        
-        Returns the old value or `undefined` if there was none. If multiple properties are set, returns and array of old values.
+    Sets the values of one or several properties of this object or nested objects and informs observers.
+    
+    If a single argument is passed, it is assumed to be an object containing keypath-value pairs. If two arguments 
+    are passed, the first one is interpreted as the keypath and the second one as the value.
+    
+    The property is identified by its keypath using the dot notation. The implementation follows the keypath 
+    and sets the referenced property to the given value. If it meets a dead end on the path (an object which 
+    doesn't contain the property which comes next on the keypath), it just creates an empty object and continues 
+    with the rest of the keypath. If it cannot set the value because it stumbles upon a defined property whose type is 
+    not an object, it throws an `Observable.SetOperationFailed` error.
+    
+    Returns the old value or `undefined` if there was none. If multiple properties are set, returns and array of old values.
     */
 
     batchStarted = this.beginBatch();
@@ -103,11 +101,11 @@ Observable = (function() {
     computed property, their dependencies are tracked.
     */
 
-    var dependentKeypath, segments, _base, _ref;
+    var dependentKeypath, segments, _base;
     segments = keypath.split(".");
     if (this._computedPropertyStack.length > 0) {
       dependentKeypath = this._computedPropertyStack[this._computedPropertyStack.length - 1];
-      if ((_ref = (_base = this._dependentKeypathsByKeypath)[keypath]) == null) {
+      if ((_base = this._dependentKeypathsByKeypath)[keypath] == null) {
         _base[keypath] = {};
       }
       this._dependentKeypathsByKeypath[keypath][dependentKeypath] = true;
@@ -117,10 +115,10 @@ Observable = (function() {
 
   Observable.prototype.invalidate = function(keypath, oldValue, newValue) {
     /*
-        Manually informs the observers about a change in the property with the given keypath. This is for example necessary
-        when dealing with changes in array properties.
-        
-        Delays the notification if a batch is active until `endBatch` is called.
+    Manually informs the observers about a change in the property with the given keypath. This is for example necessary
+    when dealing with changes in array properties.
+    
+    Delays the notification if a batch is active until `endBatch` is called.
     */
 
     var batchStarted, dependentKeypath, dependentKeypaths;
@@ -149,8 +147,8 @@ Observable = (function() {
     Registers the given observer for the given object property keypath.
     */
 
-    var _base, _ref;
-    if ((_ref = (_base = this._observersByKeypath)[keypath]) == null) {
+    var _base;
+    if ((_base = this._observersByKeypath)[keypath] == null) {
       _base[keypath] = [];
     }
     return this._observersByKeypath[keypath].push(observer);
@@ -175,12 +173,13 @@ Observable = (function() {
 
   Observable.prototype.beginBatch = function() {
     /*
-        Starts a batch. 
-        
-        Within a batch, observers are not notified of changes. They will be notified as soon as `endBatch` is called.
-        
-        If a batch was already active, the method has no effect and returns false.
+    Starts a batch. 
+    
+    Within a batch, observers are not notified of changes. They will be notified as soon as `endBatch` is called.
+    
+    If a batch was already active, the method has no effect and returns false.
     */
+
     if (this._inBatch) {
       return false;
     } else {
@@ -191,9 +190,9 @@ Observable = (function() {
 
   Observable.prototype.endBatch = function() {
     /*
-        Ends the batch and carries out the delayed observer notifications.
-        
-        If no batch was active, the method has no effect and returns false.
+    Ends the batch and carries out the delayed observer notifications.
+    
+    If no batch was active, the method has no effect and returns false.
     */
 
     var invalidation, keypath, observer, observers, _i, _len, _ref;

@@ -17,7 +17,6 @@
   },
   "main": "./iota-observable.js",
   "devDependencies": {
-    "amdefine": "0.0.x",
     "chai": "1.8.x",
     "sinon-chai": "2.4.x",
     "sinon": "1.7.x",
@@ -25,6 +24,7 @@
     "mocha": "1.13.x",
     "grunt": "0.4.x",
     "grunt-contrib-coffee": "0.7.x",
-    "grunt-simple-mocha": "0.4.x"
+    "grunt-simple-mocha": "0.4.x",
+    "grunt-urequire": "0.6.x"
   }
 }

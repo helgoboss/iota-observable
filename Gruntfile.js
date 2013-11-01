@@ -2,9 +2,6 @@ module.exports = function(grunt) {
   grunt.initConfig({
     coffee: {
       compile: {
-        options: {
-          bare: true // because of 'amdefine'
-        },
         expand: true,
         flatten: true,
         src: ['src/*.coffee'],
@@ -18,11 +15,20 @@ module.exports = function(grunt) {
           compilers: ['coffee:coffee-script']
         }
       }
+    },
+    urequire: {
+      umd: {
+        template: 'UMDplain',
+        path: '.',
+        filez: 'iota-observable.js',
+        forceOverwriteSources: true
+      }
     }
   });
   
   grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-simple-mocha');
+  grunt.loadNpmTasks('grunt-urequire');
   
-  grunt.registerTask('default', ['coffee', 'simplemocha']);
+  grunt.registerTask('default', ['coffee', 'urequire', 'simplemocha']);
 };

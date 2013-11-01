@@ -1,6 +1,9 @@
 module.exports = function(grunt) {
   grunt.initConfig({
     coffee: {
+      options: {
+        bare: true
+      },
       compile: {
         expand: true,
         flatten: true,
@@ -16,19 +19,18 @@ module.exports = function(grunt) {
         }
       }
     },
-    urequire: {
-      umd: {
-        template: 'UMDplain',
-        path: '.',
-        filez: 'iota-observable.js',
-        forceOverwriteSources: true
+    umd: {
+      all: {
+        src: 'iota-observable.js',
+        objectToExport: 'Observable',
+        globalAlias: 'Observable'
       }
     }
   });
   
   grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-simple-mocha');
-  grunt.loadNpmTasks('grunt-urequire');
+  grunt.loadNpmTasks('grunt-umd');
   
-  grunt.registerTask('default', ['coffee', 'urequire', 'simplemocha']);
+  grunt.registerTask('default', ['coffee', 'umd', 'simplemocha']);
 };

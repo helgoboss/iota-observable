@@ -25,6 +25,6 @@
     "grunt": "0.4.x",
     "grunt-contrib-coffee": "0.7.x",
     "grunt-simple-mocha": "0.4.x",
-    "grunt-urequire": "0.6.x"
+    "grunt-umd": "1.3.0"
   }
 }

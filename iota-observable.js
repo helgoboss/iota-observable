@@ -205,20 +205,28 @@ Observable = (function() {
     If no batch was active, the method has no effect and returns false.
     */
 
-    var invalidation, keypath, observer, observers, _i, _len, _ref;
+    var current, invalidation, keypath, observer, observers, splitup, _i, _len, _ref;
     if (this._inBatch) {
       this._inBatch = false;
       _ref = this._invalidationByKeypath;
       for (keypath in _ref) {
         invalidation = _ref[keypath];
-        observers = this._observersByKeypath[keypath];
-        if (observers != null) {
-          for (_i = 0, _len = observers.length; _i < _len; _i++) {
-            observer = observers[_i];
-            observer(keypath, invalidation.oldValue, invalidation.newValue);
+        splitup = keypath.split(".");
+        while (splitup.length) {
+          current = splitup.join(".");
+          splitup.pop();
+          observers = this._observersByKeypath[current];
+          console.log(current);
+          if (observers != null) {
+            for (_i = 0, _len = observers.length; _i < _len; _i++) {
+              observer = observers[_i];
+              if (observer(current, invalidation.oldValue, invalidation.newValue) === false) {
+                splitup.length = 0;
+              }
+            }
           }
+          delete this._invalidationByKeypath[keypath];
         }
-        delete this._invalidationByKeypath[keypath];
       }
       return true;
     } else {

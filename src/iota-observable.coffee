@@ -167,13 +167,19 @@ class Observable
       
       # Call observers of keypath. Make for each keypath-observer combination exactly one call.
       for keypath, invalidation of @_invalidationByKeypath
-        observers = @_observersByKeypath[keypath]
-        if observers?
-          for observer in observers
-            observer(keypath, invalidation.oldValue, invalidation.newValue)
-        
-        # Remove invalidation
-        delete @_invalidationByKeypath[keypath]
+        splitup = keypath.split(".")
+        while splitup.length
+          current = splitup.join(".")
+          splitup.pop()
+          observers = @_observersByKeypath[current]
+          console.log(current)
+          if observers?
+            for observer in observers
+              if observer(current, invalidation.oldValue, invalidation.newValue) == false
+                splitup.length = 0
+
+          # Remove invalidation
+          delete @_invalidationByKeypath[keypath]
       true
     else
       false

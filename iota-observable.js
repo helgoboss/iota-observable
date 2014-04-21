@@ -205,7 +205,7 @@ Observable = (function() {
     If no batch was active, the method has no effect and returns false.
     */
 
-    var invalidation, keypath, observer, observers, _i, _len, _ref;
+    var invalidation, keypath, observer, observers, _i, _j, _len, _len1, _ref;
     if (this._inBatch) {
       this._inBatch = false;
       _ref = this._invalidationByKeypath;
@@ -215,6 +215,13 @@ Observable = (function() {
         if (observers != null) {
           for (_i = 0, _len = observers.length; _i < _len; _i++) {
             observer = observers[_i];
+            observer(keypath, invalidation.oldValue, invalidation.newValue);
+          }
+        }
+        observers = this._observersByKeypath['*'];
+        if (observers != null) {
+          for (_j = 0, _len1 = observers.length; _j < _len1; _j++) {
+            observer = observers[_j];
             observer(keypath, invalidation.oldValue, invalidation.newValue);
           }
         }

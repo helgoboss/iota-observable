@@ -171,6 +171,10 @@ class Observable
         if observers?
           for observer in observers
             observer(keypath, invalidation.oldValue, invalidation.newValue)
+        observers = @_observersByKeypath['*']
+        if observers?
+          for observer in observers
+            observer(keypath, invalidation.oldValue, invalidation.newValue)
         
         # Remove invalidation
         delete @_invalidationByKeypath[keypath]

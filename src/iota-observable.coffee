@@ -156,7 +156,7 @@ class Observable
       @_inBatch = true
       true
   
-  endBatch: ->
+  endBatch: (cancelNotifications) ->
     ###
     Ends the batch and carries out the delayed observer notifications.
     
@@ -167,11 +167,12 @@ class Observable
       
       # Call observers of keypath. Make for each keypath-observer combination exactly one call.
       for keypath, invalidation of @_invalidationByKeypath
-        observers = @_observersByKeypath[keypath]
-        if observers?
-          for observer in observers
-            observer(keypath, invalidation.oldValue, invalidation.newValue)
-        
+        if cancelNotifications != true
+          observers = @_observersByKeypath[keypath]
+          if observers?
+            for observer in observers
+              observer(keypath, invalidation.oldValue, invalidation.newValue)
+
         # Remove invalidation
         delete @_invalidationByKeypath[keypath]
       true

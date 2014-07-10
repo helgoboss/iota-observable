@@ -137,6 +137,18 @@ createTests = (description, createObservable) ->
       callback.should.have.been.calledOnce
       
       
+
+    it "should not call observers for each invalidated property if ending batch with flag set", ->
+      callback = sinon.spy()
+      o.on "foo", callback
+
+      o.beginBatch()
+      o.set("foo", 3)
+      o.set("foo", 3)
+      o.endBatch(true)
+
+      callback.should.not.have.been.calledOnce
+
     it "should call registered observers of a computed property when setting a dependency of the computed property via set", ->
       o.get("x").should.equal 72
       

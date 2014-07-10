@@ -198,7 +198,7 @@ Observable = (function() {
     }
   };
 
-  Observable.prototype.endBatch = function() {
+  Observable.prototype.endBatch = function(cancelNotifications) {
     /*
     Ends the batch and carries out the delayed observer notifications.
     
@@ -211,11 +211,13 @@ Observable = (function() {
       _ref = this._invalidationByKeypath;
       for (keypath in _ref) {
         invalidation = _ref[keypath];
-        observers = this._observersByKeypath[keypath];
-        if (observers != null) {
-          for (_i = 0, _len = observers.length; _i < _len; _i++) {
-            observer = observers[_i];
-            observer(keypath, invalidation.oldValue, invalidation.newValue);
+        if (cancelNotifications !== true) {
+          observers = this._observersByKeypath[keypath];
+          if (observers != null) {
+            for (_i = 0, _len = observers.length; _i < _len; _i++) {
+              observer = observers[_i];
+              observer(keypath, invalidation.oldValue, invalidation.newValue);
+            }
           }
         }
         delete this._invalidationByKeypath[keypath];
